@@ -14,6 +14,7 @@ struct QualityPopover: View {
                             dismiss()
                             if player.selectedStream?.id != stream.id { player.choose(stream) }
                         }
+                        .foregroundStyle(stream.isHiRes && player.selectedStream?.id == stream.id ? BMusicTheme.memberGold : .primary)
                     }
                 }
             }

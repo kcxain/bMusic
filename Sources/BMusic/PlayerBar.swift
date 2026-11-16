@@ -3,6 +3,7 @@ import BMusicCore
 
 struct PlayerBar: View {
     @Bindable var player: Player
+    @Bindable var model: AppModel
     @ViewState<Bool> private var showQueue = false
     @ViewState<Bool> private var showQuality = false
     var body: some View {
@@ -66,11 +67,25 @@ struct PlayerBar: View {
             .accessibilityLabel("播放模式").accessibilityValue(player.mode.label)
     }
     private var accessories: some View {
-        HStack(spacing: 6) { quality; volume; queueButton }
+        HStack(spacing: 4) { quality; volume; favoriteButton; queueButton }
+    }
+    private var favoriteButton: some View {
+        let liked = player.current.map { model.favoriteIDs.contains($0.id) } ?? false
+        return Button {
+            if let track = player.current { model.favorite(track) }
+        } label: {
+            Image(systemName: liked ? "heart.fill" : "heart")
+                .font(.system(size: 18, weight: .medium))
+                .frame(width: 30, height: 36).contentShape(Rectangle())
+                .iconHoverFeedback(color: liked ? BMusicTheme.pink : .secondary)
+        }.buttonStyle(IconButtonStyle())
+            .disabled(player.current == nil || !model.libraryReady)
+            .help(liked ? "取消喜欢" : "喜欢").accessibilityLabel(liked ? "取消喜欢" : "喜欢")
     }
     private var quality: some View {
         Button { showQuality.toggle() } label: {
             Text(player.selectedStream?.label ?? "音质").font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(player.selectedStream?.isHiRes == true ? BMusicTheme.memberGold : .primary)
                 .padding(.horizontal, 7).frame(minHeight: 30).contentShape(Rectangle())
         }.buttonStyle(.plain).fixedSize()
             .musicPopover(isPresented: $showQuality) {
@@ -82,7 +97,7 @@ struct PlayerBar: View {
             Image(systemName: player.volume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
                 .font(.system(size: 16)).foregroundStyle(.secondary)
             Slider(value: $player.volume, in: 0...1)
-                .controlSize(.small).frame(minWidth: 44, idealWidth: 64, maxWidth: 76).frame(height: 28).accessibilityLabel("音量")
+                .controlSize(.small).frame(minWidth: 44, idealWidth: 52, maxWidth: 56).frame(height: 28).accessibilityLabel("音量")
         }.help("音量 \(Int(player.volume * 100))%")
     }
     private var queueButton: some View {

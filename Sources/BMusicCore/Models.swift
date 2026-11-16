@@ -58,7 +58,7 @@ public struct AudioStream: Identifiable, Sendable, Equatable {
     public var label: String {
         switch id {
         case 30251: return "Hi-Res 无损"
-        case 30250: return "Dolby Atmos"
+        case 30250: return "Dolby 音轨"
         case 30280: return "高音质"
         case 30232: return "标准"
         case 30216: return "流畅"

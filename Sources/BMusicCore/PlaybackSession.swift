@@ -5,14 +5,16 @@ public struct PlaybackSession: Codable, Sendable, Equatable {
     public var version = 1
     public var tracks: [Track]
     public var currentTrackID: String?
+    public var currentTrack: Track?
     public var elapsed: Double
     public var mode: PlaybackMode
     public var volume: Double
     public var qualityID: Int?
 
     public init(tracks: [Track], currentTrackID: String?, elapsed: Double,
-                mode: PlaybackMode, volume: Double, qualityID: Int? = nil) {
+                mode: PlaybackMode, volume: Double, qualityID: Int? = nil, currentTrack: Track? = nil) {
         self.tracks = tracks; self.currentTrackID = currentTrackID; self.elapsed = elapsed
+        self.currentTrack = currentTrack
         self.mode = mode; self.volume = volume; self.qualityID = qualityID
     }
     public func validated() throws -> Self {
@@ -21,7 +23,9 @@ public struct PlaybackSession: Codable, Sendable, Equatable {
         var seen: Set<String> = []
         result.tracks = tracks.filter { !$0.bvid.isEmpty && $0.part > 0 && seen.insert($0.id).inserted }
         result.volume = volume.isFinite ? min(1, max(0, volume)) : 0.8
-        if let current = result.tracks.first(where: { $0.id == currentTrackID }) {
+        if let track = result.currentTrack,
+           track.bvid.isEmpty || track.part < 1 || track.id != currentTrackID { result.currentTrack = nil }
+        if let current = result.currentTrack ?? result.tracks.first(where: { $0.id == currentTrackID }) {
             result.elapsed = elapsed.isFinite ? max(0, elapsed) : 0
             if current.duration.isFinite, current.duration > 0 { result.elapsed = min(result.elapsed, current.duration) }
         } else { result.currentTrackID = nil; result.elapsed = 0 }

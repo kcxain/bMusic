@@ -16,7 +16,7 @@ final class Player {
         }
     }
     private(set) var queuedTrackIDs: Set<String> = []
-    var index = 0
+    var index: Int { queue.firstIndex { $0.track.id == current?.id } ?? -1 }
     var isPlaying = false
     var isLoading = false
     let timeline = PlaybackTimeline()
@@ -130,14 +130,9 @@ final class Player {
         if state(for: track).shouldToggle { toggle() }
         else { play(track, in: tracks) }
     }
-    func activateSearchResult(_ track: Track) {
-        if state(for: track).shouldToggle { toggle(); return }
-        let position = QueueEditing.selectSingle(track, in: &queue)
-        playEntry(at: position)
-    }
     func activateEntry(_ id: UUID) {
         guard let position = queue.firstIndex(where: { $0.id == id }) else { return }
-        if position == index, current != nil, error == nil { toggle() }
+        if state(for: queue[position].track).shouldToggle { toggle() }
         else { playEntry(at: position) }
     }
     func state(for entry: QueueEntry) -> TrackPlaybackState {
@@ -146,17 +141,17 @@ final class Player {
     }
     func play(_ track: Track, in tracks: [Track]? = nil) {
         if let tracks { queue = QueueEditing.uniqueEntries(from: tracks) }
-        if let i = queue.firstIndex(where: { $0.track.id == track.id }) { playEntry(at: i) }
-        else { queue = [QueueEntry(track: track)]; playEntry(at: 0) }
+        startPlayback(track)
     }
-    private func playEntry(at position: Int, resumeAt seconds: Double = 0, qualityID: Int? = nil) {
+    private func playEntry(at position: Int) {
         guard queue.indices.contains(position) else { return }
+        startPlayback(queue[position].track)
+    }
+    private func startPlayback(_ track: Track, resumeAt seconds: Double = 0, qualityID: Int? = nil) {
         if let playTrace { PerformanceTrace.end(playTrace, outcome: "superseded") }
         if let seekTrace { PerformanceTrace.end(seekTrace, outcome: "superseded"); self.seekTrace = nil }
         playTrace = PerformanceTrace.begin("click_to_playing")
         needsResume = false; restoredQualityID = nil
-        index = position
-        let entryID = queue[position].id, track = queue[position].track
         let warm = prefetched.flatMap { $0.0.id == track.id && Date().timeIntervalSince($0.2) < 40 ? $0 : nil }
         clearPrefetch()
         task?.cancel(); assetTask?.cancel(); let token = UUID(); generation = token
@@ -179,8 +174,11 @@ final class Player {
                 else { available = try await client.audio(resolved) }
                 try Task.checkCancellation()
                 guard generation == token else { return }
-                guard queue.indices.contains(index), queue[index].id == entryID else { return }
-                current = resolved; queue[index].track = resolved; streams = available
+                current = resolved
+                if let position = queue.firstIndex(where: { $0.track.id == track.id }) {
+                    queue[position].track = resolved
+                }
+                streams = available
                 timeline.reset(duration: resolved.duration)
                 timeline.tick(seconds, item: nil)
                 nowPlaying.setTrack(resolved)
@@ -245,15 +243,15 @@ final class Player {
         } else { error = message; isLoading = false; engine.pause() }
     }
     func retry() {
-        if current != nil { playEntry(at: index, resumeAt: elapsed, qualityID: selectedStream?.id ?? restoredQualityID) }
+        if let current { startPlayback(current, resumeAt: elapsed, qualityID: selectedStream?.id ?? restoredQualityID) }
     }
     func toggle() {
         guard current != nil else { if !queue.isEmpty { playEntry(at: 0) }; return }
         setPlaying(!intendsPlayback)
     }
     private func setPlaying(_ value: Bool) {
-        if value, needsResume {
-            playEntry(at: index, resumeAt: elapsed, qualityID: restoredQualityID)
+        if value, needsResume, let current {
+            startPlayback(current, resumeAt: elapsed, qualityID: restoredQualityID)
             return
         }
         intendsPlayback = value
@@ -303,7 +301,11 @@ final class Player {
         }
     }
     func next(automatic: Bool = false) {
-        guard !queue.isEmpty else { return }
+        guard !queue.isEmpty else {
+            if automatic { intendsPlayback = false; engine.pause(); isPlaying = false; updateNowPlaying(force: true) }
+            return
+        }
+        if index < 0 { playEntry(at: mode == .shuffle ? Int.random(in: queue.indices) : 0); return }
         if mode == .shuffle, queue.count > 1 {
             let choice = Int.random(in: 0..<queue.count - 1)
             playEntry(at: choice >= index ? choice + 1 : choice); return
@@ -318,36 +320,16 @@ final class Player {
     }
     func enqueue(_ track: Track) { QueueEditing.selectSingle(track, in: &queue) }
     func moveEntry(_ id: UUID, to boundary: Int) {
-        let currentID = queue.indices.contains(index) ? queue[index].id : nil
         QueueEditing.move(&queue, id: id, to: boundary)
-        if let currentID, let position = queue.firstIndex(where: { $0.id == currentID }) { index = position }
         clearPrefetch()
     }
     func removeEntry(_ id: UUID) {
-        guard let removedIndex = queue.firstIndex(where: { $0.id == id }) else { return }
-        let currentID = queue.indices.contains(index) ? queue[index].id : nil
-        let wasPlaying = intendsPlayback
-        queue.remove(at: removedIndex); clearPrefetch()
-        guard !queue.isEmpty else { clearQueue(); return }
-        if currentID == id, current != nil {
-            // Continue with the next entry, or the last remaining entry at the end.
-            playEntry(at: min(removedIndex, queue.count - 1))
-            if !wasPlaying { setPlaying(false) }
-        } else if let currentID, let position = queue.firstIndex(where: { $0.id == currentID }) {
-            index = position
-        } else { index = min(index, queue.count - 1) }
+        queue.removeAll { $0.id == id }
+        clearPrefetch()
     }
     func clearQueue() {
-        generation = UUID(); installation = UUID()
-        task?.cancel(); assetTask?.cancel(); clearPrefetch()
-        intendsPlayback = false; engine.pause(); engine.replaceCurrentItem(with: nil)
-        itemObservation = nil; audioAsset = nil
-        queue = []; index = 0; current = nil; streams = []; selectedStream = nil
-        error = nil; isLoading = false; isPlaying = false; resumePosition = 0
-        timeline.reset(duration: 0); nowPlaying.clear()
-        needsResume = false; restoredQualityID = nil; sessionChanged()
-        if let playTrace { PerformanceTrace.end(playTrace, outcome: "cleared"); self.playTrace = nil }
-        if let seekTrace { PerformanceTrace.end(seekTrace, outcome: "cleared"); self.seekTrace = nil }
+        queue = []
+        clearPrefetch()
     }
     private func clearPrefetch() {
         prefetchTask?.cancel(); prefetchTask = nil; prefetched = nil; prefetchAttempt = nil
@@ -380,7 +362,7 @@ final class Player {
     }
     private var sessionSnapshot: PlaybackSession {
         PlaybackSession(tracks: queue.map(\.track), currentTrackID: current?.id, elapsed: elapsed,
-                        mode: mode, volume: volume, qualityID: selectedStream?.id ?? restoredQualityID)
+                        mode: mode, volume: volume, qualityID: selectedStream?.id ?? restoredQualityID, currentTrack: current)
     }
     private func restorePlaybackSession() async {
         do {
@@ -390,8 +372,8 @@ final class Player {
                 restoringSession = true
                 queue = QueueEditing.uniqueEntries(from: snapshot.tracks)
                 mode = snapshot.mode; volume = snapshot.volume
-                if let position = queue.firstIndex(where: { $0.track.id == snapshot.currentTrackID }) {
-                    index = position; current = queue[position].track
+                if let restored = snapshot.currentTrack ?? snapshot.tracks.first(where: { $0.id == snapshot.currentTrackID }) {
+                    current = restored
                     timeline.reset(duration: current!.duration)
                     timeline.tick(snapshot.elapsed, item: nil)
                     needsResume = true; restoredQualityID = snapshot.qualityID

@@ -28,8 +28,8 @@ struct DiscoveryView: View {
                         } else {
                             CoverCarousel(tracks: recent, cardWidth: recentWidth, coverHeight: recentMetrics.coverHeight, viewportWidth: geometry.size.width) { _, track in
                                 RecentTrackCard(track: track, width: recentWidth, state: player.state(for: track), isQueued: player.queuedTrackIDs.contains(track.id), enqueue: { player.enqueue(track) }) {
-                                    player.activate(track, in: recent)
-                                }.contextMenu { trackActions(track, queue: recent) }.draggableTrack(track)
+                                    player.activate(track)
+                                }.contextMenu { trackActions(track) }.draggableTrack(track)
                             }
                         }
                     }
@@ -53,8 +53,8 @@ struct DiscoveryView: View {
                         } else {
                             CoverCarousel(tracks: model.recommendations, cardWidth: featuredWidth, coverHeight: featured.coverHeight, viewportWidth: geometry.size.width) { index, track in
                                 FeaturedCard(track: track, rank: index + 1, state: player.state(for: track), width: featuredWidth, isQueued: player.queuedTrackIDs.contains(track.id), enqueue: { player.enqueue(track) }) {
-                                    player.activate(track, in: model.recommendations)
-                                }.contextMenu { trackActions(track, queue: model.recommendations) }.draggableTrack(track)
+                                    player.activate(track)
+                                }.contextMenu { trackActions(track) }.draggableTrack(track)
                             }
                         }
                     }
@@ -63,8 +63,8 @@ struct DiscoveryView: View {
         }
         .task { await model.loadRecommendations() }
     }
-    @ViewBuilder private func trackActions(_ track: Track, queue: [Track]) -> some View {
-        Button(player.state(for: track).label) { player.activate(track, in: queue) }
+    @ViewBuilder private func trackActions(_ track: Track) -> some View {
+        Button(player.state(for: track).label) { player.activate(track) }
         Button("加入播放队列") { player.enqueue(track) }
         Button(model.favoriteIDs.contains(track.id) ? "取消喜欢" : "喜欢") { model.favorite(track) }
         Menu("加入歌单") {

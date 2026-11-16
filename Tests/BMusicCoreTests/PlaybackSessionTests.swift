@@ -45,6 +45,27 @@ struct PlaybackSessionTests {
         #expect(missing.elapsed == 0)
         #expect(missing.volume == 0.8)
     }
+    @Test func restoresCurrentSongWithEmptyQueue() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let track = Track(bvid: "BVsolo", title: "Solo", uploader: "", duration: 300)
+        let snapshot = PlaybackSession(tracks: [], currentTrackID: track.id, elapsed: 123,
+                                       mode: .sequential, volume: 0.8, currentTrack: track)
+        try await PlaybackSessionStore(url: url).save(snapshot, revision: 1)
+        let restored = try #require(try await PlaybackSessionStore(url: url).load())
+        #expect(restored.tracks.isEmpty)
+        #expect(restored.currentTrack == track)
+        #expect(restored.elapsed == 123)
+    }
+    @Test func legacySnapshotStillRestoresQueuedSong() throws {
+        let track = Track(bvid: "BVlegacy", title: "Legacy", uploader: "", duration: 300)
+        let old = PlaybackSession(tracks: [track], currentTrackID: track.id, elapsed: 42, mode: .sequential, volume: 0.8)
+        let data = try JSONEncoder().encode(old)
+        let decoded = try JSONDecoder().decode(PlaybackSession.self, from: data).validated()
+        #expect(decoded.currentTrack == nil)
+        #expect(decoded.currentTrackID == track.id)
+        #expect(decoded.elapsed == 42)
+    }
     @Test func corruptFileIsPreserved() async throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: url) }

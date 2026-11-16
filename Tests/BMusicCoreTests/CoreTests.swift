@@ -12,6 +12,14 @@ struct CoreTests {
         #expect(result.hasPrefix("keyword=%E9%9F%B3%E4%B9%90%20%26&wts=1&"))
         #expect(throws: (any Error).self) { try WBISigner.query([:], imageKey: "short", subKey: "bad") }
     }
+    @Test func dolbyTrackPreservesCodecAndDoesNotPromiseSpatialOutput() throws {
+        let streams = try BilibiliClient.parseAudio(["dash": [
+            "dolby": ["audio": [["id": 30250, "baseUrl": "https://example.com/dolby.m4s", "codecs": "ec-3", "bandwidth": 384000]]]
+        ]])
+        #expect(streams.count == 1)
+        #expect(streams[0].codec == "ec-3")
+        #expect(streams[0].label == "Dolby 音轨")
+    }
     @Test func testAudioParsingAndPreference() throws {
         let streams = try BilibiliClient.parseAudio(["dash": [
             "audio": [["id": 30280, "baseUrl": "https://example.com/a.m4s", "bandwidth": 192000, "codecs": "mp4a.40.2"], ["id": 30216, "base_url": "https://example.com/b.m4s", "bandwidth": 64000]],

@@ -61,7 +61,7 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Color(nsColor: .windowBackgroundColor))
             .overlay(alignment: .bottom) {
-                PlayerBar(player: player)
+                PlayerBar(player: player, model: model)
                     .musicGlass(cornerRadius: 28)
                     .frame(maxWidth: 760)
                     .padding(.horizontal, 44).padding(.bottom, 12).padding(.top, 6)
@@ -83,7 +83,7 @@ struct ContentView: View {
                         Text("P\(track.part)").foregroundStyle(.secondary).frame(width: 35)
                         Text(track.title).lineLimit(2)
                         Spacer()
-                        Button { model.player.activate(track, in: model.parts); model.showingParts = false } label: { Image(systemName: player.state(for: track).symbol) }
+                        Button { model.player.activate(track); model.showingParts = false } label: { Image(systemName: player.state(for: track).symbol) }
                         Button { model.favorite(track) } label: { Image(systemName: model.favoriteIDs.contains(track.id) ? "heart.fill" : "heart") }
                         EnqueueButton(isQueued: player.queuedTrackIDs.contains(track.id)) { player.enqueue(track) }
                         Menu { ForEach(model.library.playlists) { list in Button(list.name) { model.editLibrary { $0.add(track, to: list.id) } } } } label: { Image(systemName: "text.badge.plus") }
@@ -232,8 +232,7 @@ struct ContentView: View {
         }
     }
     private func activateListedTrack(_ track: Track) {
-        if model.selection == "home" { player.activateSearchResult(track) }
-        else { player.activate(track, in: tracks) }
+        player.activate(track, in: playlist?.tracks)
     }
 }
 

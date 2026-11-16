@@ -22,7 +22,7 @@ struct PlaybackQueueView: View {
     var body: some View {
         MusicPopover(title: "播放队列 · \(player.queue.count)",
                      clear: player.queue.isEmpty ? nil : { player.clearQueue() },
-                     clearHelp: "清空队列并停止播放") {
+                     clearHelp: "清空队列，保留当前播放") {
             if player.queue.isEmpty {
                 Text("选择歌曲后会显示在这里").foregroundStyle(.secondary)
                 Spacer()
