@@ -32,6 +32,7 @@ private final class TrackDragView: NSView, NSDraggingSource {
     private static weak var active: TrackDragView?
     private static var mouseDown: NSEvent?
     private var pressed: NSPoint?
+    private var pressedTrack: Track?
     init(track: Track) { self.track = track; super.init(frame: .zero) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
@@ -44,17 +45,12 @@ private final class TrackDragView: NSView, NSDraggingSource {
         Self.monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]) { event in
             if event.type == .leftMouseDown {
                 Self.mouseDown = event
+                // Resolve once at mouse-down; lazy carousel cells may move or be
+                // reused before the first drag event arrives.
+                Self.active = Self.sources.allObjects.filter { $0.containsVisiblePoint(event) }
+                    .min { $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height }
+                _ = Self.active?.handle(event)
                 return event
-            }
-            if event.type == .leftMouseDragged, Self.active == nil, let down = Self.mouseDown {
-                guard hypot(event.locationInWindow.x - down.locationInWindow.x,
-                            event.locationInWindow.y - down.locationInWindow.y) >= 6 else { return event }
-                Self.mouseDown = nil
-                Self.active = Self.sources.allObjects.first { view in
-                    view.window === down.window && !view.isHiddenOrHasHiddenAncestor &&
-                    view.visibleRect.contains(view.convert(down.locationInWindow, from: nil))
-                }
-                _ = Self.active?.handle(down)
             }
             let result: NSEvent?
             if let active = Self.active { result = active.handle(event) }
@@ -69,18 +65,30 @@ private final class TrackDragView: NSView, NSDraggingSource {
         if Self.sources.allObjects.isEmpty, let monitor = Self.monitor {
             NSEvent.removeMonitor(monitor); Self.monitor = nil
         }
-        pressed = nil
+        pressed = nil; pressedTrack = nil
+    }
+    private func containsVisiblePoint(_ event: NSEvent) -> Bool {
+        guard window === event.window, !isHiddenOrHasHiddenAncestor,
+              bounds.contains(convert(event.locationInWindow, from: nil)),
+              visibleRect.contains(convert(event.locationInWindow, from: nil)) else { return false }
+        var ancestor = superview
+        while let view = ancestor {
+            if view is NSClipView, !view.bounds.contains(view.convert(event.locationInWindow, from: nil)) { return false }
+            ancestor = view.superview
+        }
+        return true
     }
     private func handle(_ event: NSEvent) -> NSEvent? {
         guard event.window === window, !isHiddenOrHasHiddenAncestor else { pressed = nil; return event }
         let location = convert(event.locationInWindow, from: nil)
         switch event.type {
         case .leftMouseDown:
-            pressed = visibleRect.contains(location) ? location : nil
+            pressed = containsVisiblePoint(event) ? location : nil
+            pressedTrack = pressed == nil ? nil : track
         case .leftMouseUp:
-            pressed = nil
+            pressed = nil; pressedTrack = nil
         case .leftMouseDragged:
-            guard let start = pressed, hypot(location.x - start.x, location.y - start.y) >= 6 else { return event }
+            guard let track = pressedTrack, let start = pressed, hypot(location.x - start.x, location.y - start.y) >= 6 else { return event }
             pressed = nil
             guard let data = try? TrackDragPayload(track: track).encoded() else { return event }
             let pasteboard = NSPasteboardItem()
@@ -112,7 +120,7 @@ private final class TrackDragView: NSView, NSDraggingSource {
     }
     func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation { .copy }
     func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
-        pressed = nil; Self.active = nil; Self.mouseDown = nil
+        pressed = nil; pressedTrack = nil; Self.active = nil; Self.mouseDown = nil
         NotificationCenter.default.post(name: .trackDragEnded, object: nil)
     }
 }

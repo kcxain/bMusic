@@ -38,10 +38,23 @@ struct BMusicApp: App {
 struct SettingsView: View {
     @Bindable var player: Player
     @ObservedObject var updater: AppUpdater
+    @AppStorage("updateProxyMode") private var proxyMode = "auto"
+    @AppStorage("updateProxyPort") private var proxyPort = 7890
     var body: some View {
         Form {
             Section("更新") {
                 Toggle("自动检查更新", isOn: $updater.automaticallyChecks)
+                Picker("更新代理", selection: $proxyMode) {
+                    Text("自动检测").tag("auto")
+                    Text("手动设置").tag("manual")
+                    Text("直接连接").tag("direct")
+                }
+                if proxyMode != "direct" {
+                    TextField("本机代理端口", value: $proxyPort, format: .number.grouping(.never))
+                        .onChange(of: proxyPort) { _, port in
+                            if !(1...65535).contains(port) { proxyPort = 7890 }
+                        }
+                }
                 Button("检查更新…") { updater.check() }.disabled(!updater.canCheck)
             }
             Section("音频") {
@@ -57,6 +70,6 @@ struct SettingsView: View {
                     NSWorkspace.shared.open(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("BMusic"))
                 }
             }
-        }.formStyle(.grouped).frame(width: 480, height: 420)
+        }.formStyle(.grouped).frame(width: 480, height: 500)
     }
 }

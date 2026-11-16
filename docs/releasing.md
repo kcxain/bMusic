@@ -12,6 +12,10 @@ BMusic 使用 Sparkle 2.10.1（Package.resolved 固定依赖），支持 macOS 1
 
 参考 [Magpie 的更新签名验证](https://github.com/yetone/magpie/blob/main/internal/update/signed.go) 的内置公钥和发布端签名原则；BMusic 的下载、安装和重启由 Sparkle 实现。参见 [Sparkle 官方文档](https://sparkle-project.org/documentation/)。
 
+## 更新代理
+
+设置中的更新代理默认自动检测：优先使用系统代理；系统未配置代理时探测本机端口（默认 7890），端口可用时通过该 HTTP 代理更新。手动模式指定本机 HTTP / 混合代理端口，直接连接模式关闭更新代理。检查版本和下载包使用相同策略，跟随 HTTPS 跳转。转发按数据块进行，避免在内存中保留整个安装包；只匹配本仓库的更新地址，音乐请求保持独立。
+
 ## 发布步骤
 
 1. `git pull --rebase`，修改版本号与递增的 CFBundleVersion。

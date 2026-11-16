@@ -11,6 +11,7 @@ final class AppUpdater: ObservableObject {
     }
 
     init() {
+        URLProtocol.registerClass(UpdateProxyProtocol.self)
         controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
         controller.updater.publisher(for: \.canCheckForUpdates)
             .assign(to: &$canCheck)
