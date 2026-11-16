@@ -1,0 +1,20 @@
+name: macOS
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: ./scripts/test.sh
+      - name: Build app
+        run: ./scripts/build-app.sh
+      - name: Archive
+        run: ditto -c -k --sequesterRsrc --keepParent dist/BMusic.app dist/BMusic-macOS.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BMusic-macOS
+          path: dist/BMusic-macOS.zip
