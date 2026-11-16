@@ -5,12 +5,13 @@ struct IconHoverFeedback: ViewModifier {
     let color: Color
     var pressed = false
     var prominent = false
+    var hoverEnabled = true
     @ViewState private var hovering = false
     @Environment(\.isEnabled) private var enabled
     func body(content: Content) -> some View {
-        content.foregroundStyle(enabled && hovering ? BMusicTheme.pink : (prominent ? .white : color))
+        content.foregroundStyle(enabled && hoverEnabled && hovering ? BMusicTheme.pink : (prominent ? .white : color))
             .background {
-                if prominent { Circle().fill(BMusicTheme.pink.opacity(enabled && hovering ? 0.12 : 1)) }
+                if prominent { Circle().fill(BMusicTheme.pink.opacity(enabled && hoverEnabled && hovering ? 0.12 : 1)) }
             }
             .opacity(enabled ? (pressed ? 0.6 : 1) : 0.4)
             .onHover { hovering = $0 }

@@ -47,11 +47,11 @@ struct PlayerBar: View {
                             color: player.mode == .sequential ? .secondary : BMusicTheme.pink, size: 15) {
                 player.mode = player.mode.next
             }.accessibilityLabel("播放模式").accessibilityValue(player.mode.label)
-            MusicIconButton(symbol: "backward.end.fill", label: "上一首", width: 36) { player.previous() }
+            MusicIconButton(symbol: "backward.end.fill", label: "上一首", width: 36, hoverEnabled: false) { player.previous() }
             MusicIconButton(symbol: player.intendsPlayback ? "pause.fill" : "play.fill", label: "播放 / 暂停",
-                            size: 16, width: 36, prominent: true, loading: player.isLoading) { player.toggle() }
+                            size: 16, width: 36, prominent: true, loading: player.isLoading, hoverEnabled: false) { player.toggle() }
                 .disabled(player.current == nil)
-            MusicIconButton(symbol: "forward.end.fill", label: "下一首", width: 36) { player.next() }
+            MusicIconButton(symbol: "forward.end.fill", label: "下一首", width: 36, hoverEnabled: false) { player.next() }
             favoriteButton
         }
     }
