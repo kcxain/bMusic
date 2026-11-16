@@ -55,7 +55,7 @@ struct PlayerBar: View {
             }.disabled(player.current == nil).help("播放 / 暂停")
             Button { player.next() } label: { Image(systemName: "forward.end.fill").frame(width: 36, height: 36).contentShape(Rectangle()) }
                 .help("下一首")
-            Color.clear.frame(width: 32, height: 36).allowsHitTesting(false).accessibilityHidden(true)
+            favoriteButton
         }.buttonStyle(IconButtonStyle()).font(.system(size: 17))
     }
     private var modeButton: some View {
@@ -67,7 +67,7 @@ struct PlayerBar: View {
             .accessibilityLabel("播放模式").accessibilityValue(player.mode.label)
     }
     private var accessories: some View {
-        HStack(spacing: 4) { quality; volume; favoriteButton; queueButton }
+        HStack(spacing: 4) { quality; volume; queueButton }
     }
     private var favoriteButton: some View {
         let liked = player.current.map { model.favoriteIDs.contains($0.id) } ?? false
@@ -76,7 +76,7 @@ struct PlayerBar: View {
         } label: {
             Image(systemName: liked ? "heart.fill" : "heart")
                 .font(.system(size: 18, weight: .medium))
-                .frame(width: 30, height: 36).contentShape(Rectangle())
+                .frame(width: 32, height: 36).contentShape(Rectangle())
                 .iconHoverFeedback(color: liked ? BMusicTheme.pink : .secondary)
         }.buttonStyle(IconButtonStyle())
             .disabled(player.current == nil || !model.libraryReady)
