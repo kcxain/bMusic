@@ -2,17 +2,12 @@ import SwiftUI
 
 struct EnqueueButton: View {
     let isQueued: Bool
+    var color: Color = .secondary
     let action: () -> Void
     var body: some View {
-        Button {
+        MusicIconButton(symbol: isQueued ? "checkmark" : "plus", label: isQueued ? "已在播放队列中" : "加入播放队列",
+                        color: isQueued ? BMusicTheme.pink : color, size: 16, width: 30, height: 32) {
             if !isQueued { action() }
-        } label: {
-            Image(systemName: isQueued ? "checkmark" : "plus")
-                .font(.system(size: 16, weight: .medium))
-                .frame(width: 30, height: 32).contentShape(Rectangle())
-                .iconHoverFeedback(color: isQueued ? BMusicTheme.pink : .secondary)
-        }.buttonStyle(IconButtonStyle())
-            .help(isQueued ? "已在播放队列中" : "加入播放队列")
-            .accessibilityLabel(isQueued ? "已在播放队列中" : "加入播放队列")
+        }
     }
 }

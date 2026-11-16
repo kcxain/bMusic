@@ -43,50 +43,34 @@ struct PlayerBar: View {
     }
     private var transport: some View {
         HStack(spacing: 4) {
-            modeButton
-            Button { player.previous() } label: { Image(systemName: "backward.end.fill").frame(width: 36, height: 36).contentShape(Rectangle()) }
-                .help("上一首")
-            Button { player.toggle() } label: {
-                ZStack {
-                    Circle().fill(BMusicTheme.pink).frame(width: 36, height: 36)
-                    if player.isLoading { ProgressView().controlSize(.small).tint(.white) }
-                    else { Image(systemName: player.intendsPlayback ? "pause.fill" : "play.fill").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white) }
-                }.contentShape(Circle())
-            }.disabled(player.current == nil).help("播放 / 暂停")
-            Button { player.next() } label: { Image(systemName: "forward.end.fill").frame(width: 36, height: 36).contentShape(Rectangle()) }
-                .help("下一首")
+            MusicIconButton(symbol: player.mode.symbol, label: "\(player.mode.label)；点击切换为\(player.mode.next.label)",
+                            color: player.mode == .sequential ? .secondary : BMusicTheme.pink, size: 15) {
+                player.mode = player.mode.next
+            }.accessibilityLabel("播放模式").accessibilityValue(player.mode.label)
+            MusicIconButton(symbol: "backward.end.fill", label: "上一首", width: 36) { player.previous() }
+            MusicIconButton(symbol: player.intendsPlayback ? "pause.fill" : "play.fill", label: "播放 / 暂停",
+                            size: 16, width: 36, prominent: true, loading: player.isLoading) { player.toggle() }
+                .disabled(player.current == nil)
+            MusicIconButton(symbol: "forward.end.fill", label: "下一首", width: 36) { player.next() }
             favoriteButton
-        }.buttonStyle(IconButtonStyle()).font(.system(size: 17))
-    }
-    private var modeButton: some View {
-        Button { player.mode = player.mode.next } label: {
-            Image(systemName: player.mode.symbol).font(.system(size: 15, weight: .medium))
-                .foregroundStyle(player.mode == .sequential ? .secondary : BMusicTheme.pink)
-                .frame(width: 32, height: 36).contentShape(Rectangle())
-        }.help("\(player.mode.label)；点击切换为\(player.mode.next.label)")
-            .accessibilityLabel("播放模式").accessibilityValue(player.mode.label)
+        }
     }
     private var accessories: some View {
         HStack(spacing: 4) { quality; volume; queueButton }
     }
     private var favoriteButton: some View {
         let liked = player.current.map { model.favoriteIDs.contains($0.id) } ?? false
-        return Button {
+        return MusicIconButton(symbol: liked ? "heart.fill" : "heart", label: liked ? "取消喜欢" : "喜欢",
+                               color: liked ? BMusicTheme.pink : .secondary, size: 18) {
             if let track = player.current { model.favorite(track) }
-        } label: {
-            Image(systemName: liked ? "heart.fill" : "heart")
-                .font(.system(size: 18, weight: .medium))
-                .frame(width: 32, height: 36).contentShape(Rectangle())
-                .iconHoverFeedback(color: liked ? BMusicTheme.pink : .secondary)
-        }.buttonStyle(IconButtonStyle())
-            .disabled(player.current == nil || !model.libraryReady)
-            .help(liked ? "取消喜欢" : "喜欢").accessibilityLabel(liked ? "取消喜欢" : "喜欢")
+        }.disabled(player.current == nil || !model.libraryReady)
     }
     private var quality: some View {
         Button { showQuality.toggle() } label: {
             Text(player.selectedStream?.label ?? "音质").font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(player.selectedStream?.isHiRes == true ? BMusicTheme.memberGold : .primary)
+
                 .padding(.horizontal, 7).frame(minHeight: 30).contentShape(Rectangle())
+                .iconHoverFeedback(color: player.selectedStream?.isHiRes == true ? BMusicTheme.memberGold : .primary)
         }.buttonStyle(.plain).fixedSize()
             .musicPopover(isPresented: $showQuality) {
                 QualityPopover(player: player) { showQuality = false }
@@ -101,11 +85,7 @@ struct PlayerBar: View {
         }.help("音量 \(Int(player.volume * 100))%")
     }
     private var queueButton: some View {
-        Button { showQueue = true } label: {
-            Image(systemName: "list.bullet").font(.system(size: 20, weight: .medium))
-                .foregroundStyle(.secondary)
-                .frame(width: 32, height: 36).contentShape(Rectangle())
-        }.buttonStyle(.plain).help("播放队列")
+        MusicIconButton(symbol: "list.bullet", label: "播放队列", color: .secondary, size: 20) { showQueue = true }
             .musicPopover(isPresented: $showQueue) {
                 PlaybackQueueView(player: player)
                     .frame(width: 340, height: min(320, 58 + CGFloat(max(1, player.queue.count)) * 44))

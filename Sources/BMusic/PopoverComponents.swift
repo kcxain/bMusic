@@ -53,12 +53,8 @@ struct RemoveItemButton: View {
     var rowHovered = false
     let action: () -> Void
     var body: some View {
-        Button(action: action) {
-            Image(systemName: "xmark").font(.system(size: 11, weight: .medium))
-                .frame(width: 26, height: 32).contentShape(Rectangle())
-                .iconHoverFeedback(color: rowHovered ? .primary : .secondary)
-        }.buttonStyle(IconButtonStyle()).fixedSize()
-            .help(help).accessibilityLabel(help)
+        MusicIconButton(symbol: "xmark", label: help, color: rowHovered ? .primary : .secondary,
+                        size: 11, width: 26, height: 32, action: action).fixedSize()
     }
 }
 

@@ -96,8 +96,8 @@ private struct FeaturedCard: View {
                     Text(track.uploader).font(.system(size: 13, weight: .medium)).lineLimit(1).foregroundStyle(.white.opacity(0.9))
                 }.foregroundStyle(.white).padding(18).padding(.bottom, 44)
                 if hovering {
-                    Image(systemName: state.symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-                        .frame(width: 34, height: 34).musicGlass(cornerRadius: 17, interactive: true)
+                    Image(systemName: state.symbol).font(.system(size: 14, weight: .semibold))
+                        .frame(width: 34, height: 34).iconHoverFeedback(color: .white).musicGlass(cornerRadius: 17, interactive: true)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading).padding(14)
                 }
             }.frame(width: width, height: width * 1.33)
@@ -106,7 +106,7 @@ private struct FeaturedCard: View {
         }.buttonStyle(.plain)
             .overlay(alignment: .bottomTrailing) {
                 if hovering {
-                    EnqueueButton(isQueued: isQueued, action: enqueue).foregroundStyle(.white)
+                    EnqueueButton(isQueued: isQueued, color: .white, action: enqueue)
                         .musicGlass(cornerRadius: 16, interactive: true).padding(14)
                 }
             }
@@ -129,8 +129,8 @@ private struct RecentTrackCard: View {
                     .overlay(alignment: .bottomLeading) {
                         if hovering {
                             Image(systemName: state.symbol)
-                                .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                                .frame(width: 32, height: 32).musicGlass(cornerRadius: 16, interactive: true).padding(9)
+                                .font(.system(size: 13, weight: .semibold))
+                                .frame(width: 32, height: 32).iconHoverFeedback(color: .white).musicGlass(cornerRadius: 16, interactive: true).padding(9)
                         }
                     }.padding(.bottom, 3)
                 Text(track.title).font(.system(size: 13, weight: .medium)).foregroundStyle(state.isCurrent ? BMusicTheme.pink : .primary)
@@ -140,7 +140,7 @@ private struct RecentTrackCard: View {
         }.buttonStyle(.plain)
             .overlay(alignment: .topTrailing) {
                 if hovering {
-                    EnqueueButton(isQueued: isQueued, action: enqueue).foregroundStyle(.white)
+                    EnqueueButton(isQueued: isQueued, color: .white, action: enqueue)
                         .musicGlass(cornerRadius: 16, interactive: true)
                         .padding(9)
                         .frame(height: width, alignment: .bottomTrailing)

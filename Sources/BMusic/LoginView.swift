@@ -11,7 +11,7 @@ struct LoginView: View {
     @ViewState<UUID> private var attempt = UUID()
     var body: some View {
         VStack(spacing: 20) {
-            HStack { Spacer(); Button { dismiss() } label: { Image(systemName: "xmark") }.buttonStyle(.plain) }
+            HStack { Spacer(); MusicIconButton(symbol: "xmark", label: "关闭", action: { dismiss() }) }
             Image(systemName: "person.crop.circle.badge.checkmark").font(.system(size: 36)).foregroundStyle(.tint)
             Text("连接你的 bilibili").font(.title2.bold())
             Text("使用哔哩哔哩 App 扫码，并在手机上确认登录").font(.callout).foregroundStyle(.secondary)

@@ -55,8 +55,9 @@ struct CoverCarousel<Card: View>: View {
     private func arrow(_ symbol: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(enabled ? Color.primary : Color.secondary.opacity(0.4))
+
                 .frame(width: 28, height: 52)
+                .iconHoverFeedback(color: enabled ? .primary : .secondary.opacity(0.4))
                 .musicGlass(cornerRadius: 10, interactive: true)
         }
         .buttonStyle(.plain).padding(.horizontal, 6)

@@ -40,7 +40,7 @@ struct ContentView: View {
                         Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
                         Text(error).font(.callout).textSelection(.enabled)
                         Spacer()
-                        Button { model.error = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
+                        MusicIconButton(symbol: "xmark", label: "关闭提示") { model.error = nil }
                     }.padding(12).background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                         .padding(.horizontal, 28).padding(.bottom, 12)
                 }
@@ -83,10 +83,10 @@ struct ContentView: View {
                         Text("P\(track.part)").foregroundStyle(.secondary).frame(width: 35)
                         Text(track.title).lineLimit(2)
                         Spacer()
-                        Button { model.player.activate(track); model.showingParts = false } label: { Image(systemName: player.state(for: track).symbol) }
-                        Button { model.favorite(track) } label: { Image(systemName: model.favoriteIDs.contains(track.id) ? "heart.fill" : "heart") }
+                        MusicIconButton(symbol: player.state(for: track).symbol, label: player.state(for: track).label) { model.player.activate(track); model.showingParts = false }
+                        MusicIconButton(symbol: model.favoriteIDs.contains(track.id) ? "heart.fill" : "heart", label: "喜欢", color: model.favoriteIDs.contains(track.id) ? accent : .secondary) { model.favorite(track) }
                         EnqueueButton(isQueued: player.queuedTrackIDs.contains(track.id)) { player.enqueue(track) }
-                        Menu { ForEach(model.library.playlists) { list in Button(list.name) { model.editLibrary { $0.add(track, to: list.id) } } } } label: { Image(systemName: "text.badge.plus") }
+                        Menu { ForEach(model.library.playlists) { list in Button(list.name) { model.editLibrary { $0.add(track, to: list.id) } } } } label: { Image(systemName: "text.badge.plus").iconHoverFeedback(color: .secondary) }
                     }
                 }
             }.padding(24).frame(width: 720, height: 450)
@@ -123,7 +123,7 @@ struct ContentView: View {
                                 Button("删除歌单", role: .destructive) { deleteID = list.id }
                             }
                     }
-                    Button { playlistName = ""; renameID = nil; newPlaylist = true } label: { Label("新建歌单", systemImage: "plus") }.buttonStyle(.plain).foregroundStyle(.secondary)
+                    Button { playlistName = ""; renameID = nil; newPlaylist = true } label: { Label("新建歌单", systemImage: "plus").iconHoverFeedback(color: .secondary) }.buttonStyle(.plain).foregroundStyle(.secondary)
                 } header: { Text("我的歌单") }
             }.listStyle(.sidebar)
             Divider().padding(.horizontal, 16)

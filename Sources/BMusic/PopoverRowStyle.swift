@@ -1,12 +1,18 @@
 import SwiftUI
 
 /// Shared tint feedback without adding a background or changing the hit target.
-private struct IconHoverFeedback: ViewModifier {
+struct IconHoverFeedback: ViewModifier {
     let color: Color
+    var pressed = false
+    var prominent = false
     @ViewState private var hovering = false
     @Environment(\.isEnabled) private var enabled
     func body(content: Content) -> some View {
-        content.foregroundStyle(enabled && hovering ? BMusicTheme.pink : color)
+        content.foregroundStyle(enabled && hovering ? BMusicTheme.pink : (prominent ? .white : color))
+            .background {
+                if prominent { Circle().fill(BMusicTheme.pink.opacity(enabled && hovering ? 0.12 : 1)) }
+            }
+            .opacity(enabled ? (pressed ? 0.6 : 1) : 0.4)
             .onHover { hovering = $0 }
     }
 }
