@@ -5,7 +5,7 @@ import MediaPlayer
 /// Owns system metadata and artwork; time updates retain the same artwork object.
 @MainActor
 public final class NowPlayingPublisher {
-    public typealias ArtworkLoader = (URL) async throws -> NSImage
+    public typealias ArtworkLoader = @MainActor (URL) async throws -> NSImage
     private let publish: ([String: Any]?, MPNowPlayingPlaybackState) -> Void
     private var state: MPNowPlayingPlaybackState = .paused
     private let loadArtwork: ArtworkLoader

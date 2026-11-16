@@ -8,6 +8,7 @@ typealias ViewState<Value> = SwiftUI.State<Value>
 struct BMusicApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @ViewState private var model = AppModel()
+    @StateObject private var updater = AppUpdater()
     init() {
         NSApplication.shared.setActivationPolicy(.regular)
     }
@@ -19,6 +20,9 @@ struct BMusicApp: App {
         .windowToolbarStyle(.unified(showsTitle: false))
         .defaultSize(width: 1180, height: 780)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("检查更新…") { updater.check() }.disabled(!updater.canCheck)
+            }
             CommandMenu("播放") {
                 Button("播放 / 暂停") { model.player.toggle() }.keyboardShortcut(" ", modifiers: [])
                 Button("下一首") { model.player.next() }.keyboardShortcut(.rightArrow, modifiers: .command)
@@ -26,15 +30,20 @@ struct BMusicApp: App {
             }
         }
         Settings {
-            SettingsView(player: model.player)
+            SettingsView(player: model.player, updater: updater)
         }
     }
 }
 
 struct SettingsView: View {
     @Bindable var player: Player
+    @ObservedObject var updater: AppUpdater
     var body: some View {
         Form {
+            Section("更新") {
+                Toggle("自动检查更新", isOn: $updater.automaticallyChecks)
+                Button("检查更新…") { updater.check() }.disabled(!updater.canCheck)
+            }
             Section("音频") {
                 Toggle("优先选择 Hi-Res / Dolby 音源", isOn: $player.preferHiRes)
                 Text("音质以 B 站实际返回的音轨为准，Hi-Res 通常需要大会员和对应音源。播放时可在底部菜单切换音质。")
@@ -48,6 +57,6 @@ struct SettingsView: View {
                     NSWorkspace.shared.open(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("BMusic"))
                 }
             }
-        }.formStyle(.grouped).frame(width: 480, height: 310)
+        }.formStyle(.grouped).frame(width: 480, height: 420)
     }
 }

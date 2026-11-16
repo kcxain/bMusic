@@ -13,6 +13,7 @@ enum BMusicTheme {
 
 extension View {
     @ViewBuilder func musicGlassButton(prominent: Bool = false) -> some View {
+        #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
             if prominent { self.buttonStyle(.glassProminent) }
             else { self.buttonStyle(.glass) }
@@ -20,15 +21,23 @@ extension View {
             if prominent { self.buttonStyle(.borderedProminent) }
             else { self.buttonStyle(.bordered) }
         }
+        #else
+        if prominent { self.buttonStyle(.borderedProminent) }
+        else { self.buttonStyle(.bordered) }
+        #endif
     }
 
     @ViewBuilder func musicGlass(cornerRadius: CGFloat = 22, interactive: Bool = false) -> some View {
+        #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
             // System glass owns translucency and accessibility appearance.
             self.glassEffect(.regular.interactive(interactive), in: RoundedRectangle(cornerRadius: cornerRadius))
         } else {
             self.background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
         }
+        #else
+        self.background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+        #endif
     }
 }
 

@@ -22,7 +22,7 @@ public final class ArtworkService: Sendable {
         config.httpMaximumConnectionsPerHost = 3
         self.session = URLSession(configuration: config)
     }
-    public func image(_ url: URL, pixels: Int = 400, priority: Int = 0) async throws -> NSImage {
+    @MainActor public func image(_ url: URL, pixels: Int = 400, priority: Int = 0) async throws -> NSImage {
         let size = pixels <= 160 ? 160 : (pixels <= 400 ? 400 : 600)
         try Task.checkCancellation()
         if let image = loaded.image(for: url), min(image.size.width, image.size.height) >= CGFloat(size) {
@@ -36,10 +36,9 @@ public final class ArtworkService: Sendable {
         let result = try await pool.value(for: Key(url: target, pixels: size), priority: priority) {
             var request = URLRequest(url: target)
             request.setValue("https://www.bilibili.com/", forHTTPHeaderField: "Referer")
-            let (data, response) = try await session.data(for: request)
+            let data = try await BoundedHTTPData.load(session: session, request: request, limit: 8 * 1024 * 1024) { $0.statusCode == 200 }
             try Task.checkCancellation()
-            guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 8 * 1024 * 1024,
-                  let source = CGImageSourceCreateWithData(data as CFData, nil),
+            guard let source = CGImageSourceCreateWithData(data as CFData, nil),
                   let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, [
                     kCGImageSourceCreateThumbnailFromImageAlways: true,
                     kCGImageSourceThumbnailMaxPixelSize: size,
@@ -53,5 +52,6 @@ public final class ArtworkService: Sendable {
         loaded.record(result.image, for: url)
         return result.image
     }
+    deinit { session.invalidateAndCancel() }
     public func trim() async { await pool.clear() }
 }

@@ -47,11 +47,10 @@ public final class IndexedAudioAsset {
         request.setValue(BilibiliClient.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("https://www.bilibili.com/", forHTTPHeaderField: "Referer")
         request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
-        let (data, response) = try await session.data(for: request)
-        guard let response = response as? HTTPURLResponse, response.statusCode == 206,
-              let contentRange = response.value(forHTTPHeaderField: "Content-Range"),
-              contentRange.hasPrefix("bytes \(offset)-"), data.count <= length else { throw BMusicError.invalidResponse }
-        return data
+        guard length > 0, length <= 16 * 1024 * 1024 else { throw BMusicError.invalidResponse }
+        return try await BoundedHTTPData.load(session: session, request: request, limit: Int(length)) { response in
+            response.statusCode == 206 && response.value(forHTTPHeaderField: "Content-Range")?.hasPrefix("bytes \(offset)-") == true
+        }
     }
     deinit { server.stop() }
 }
@@ -106,6 +105,7 @@ private final class AudioSegmentServer: @unchecked Sendable {
         }
     }
     private func accept(_ connection: NWConnection) {
+        guard connections.count < 12 else { connection.cancel(); return }
         let id = UUID(); connections[id] = connection
         connection.stateUpdateHandler = { [weak self] state in
             if case .cancelled = state { self?.transfers.removeValue(forKey: id)?.cancel(); self?.connections.removeValue(forKey: id) }

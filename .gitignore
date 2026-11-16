@@ -4,3 +4,11 @@ dist/
 .DS_Store
 *.xcuserstate
 xcuserdata/
+
+# Local credentials and user state
+.env
+.env.*
+*.pem
+*.key
+library.json
+playback.json

@@ -21,6 +21,7 @@ public actor BilibiliClient {
         config.urlCache = nil
         self.session = URLSession(configuration: config)
     }
+    deinit { session.invalidateAndCancel() }
     public func restoreSession() throws {
         guard let data = try vault.read() else { return }
         let cookies = try JSONDecoder().decode([StoredCookie].self, from: data)
